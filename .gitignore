@@ -1,0 +1,6 @@
+# Ignore Vagrant
+.vagrant/
+Vagrantfile
+
+# Ignore .env file
+.env
