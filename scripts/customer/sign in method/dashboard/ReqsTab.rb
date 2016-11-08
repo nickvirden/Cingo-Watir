@@ -16,6 +16,5 @@ Screenshot()
 puts "I'm now on " + $browser.url
 puts $newline
 
-# Close $browser
-$browser.close
-$headless.destroys
+# Close browser
+Close()

@@ -5,7 +5,7 @@
 ##################################
 
 # Any variable with a $ in front can be found in basics.rb
-require_relative '../basics'
+require_relative '../customer_basics'
 
 # Cosmetic Variables
 emailStyle = "\033[38;2;221;83;71;1m" + "Email (E)" + "\033[0m"

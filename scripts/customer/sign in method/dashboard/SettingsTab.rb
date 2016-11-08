@@ -35,6 +35,5 @@ puts "\033[38;2;" + $headingColor +
 puts "I'm now on " + $browser.url
 puts $newline
 
-# Close $browser
-$browser.close
-$headless.destroy
+# Close browser
+Close()

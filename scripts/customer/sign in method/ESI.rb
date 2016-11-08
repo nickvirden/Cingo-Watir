@@ -25,25 +25,7 @@ if $button === "E"
     # SCREENSHOT
     Screenshot()
 
-    # Locate email and password input fields
-    $browser.text_fields(:class => /form-control/).each_with_index do |r, index|
-
-        # Tells which buttons were found
-        puts "I found the " + r.type + " field."
-
-        # Sets username & password
-        $browser.text_fields(:class => /form-control border-focus-green/)[index].set($emailCredentials[index])
-
-        # Prints username on first iteration and password on second
-        puts "I typed \033[38;2;255;64;129m" + $browser.text_fields(:class => /form-control border-focus-green/)[index].value + "\033[0m in the " + r.type + " input box."
-
-        puts $newline
-    end
-    
-    # SCREENSHOT
-    Screenshot()
-    
-    # FIND SIGN IN BUTTON
-    $browser.form.button(:class => /btn-cingo/, :text => /Sign In/).click
+    # Email Log In
+    EmailLogIn()
 
 end # END EMAIL LOGIN SCRIPT

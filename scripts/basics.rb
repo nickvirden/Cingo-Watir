@@ -8,7 +8,8 @@ require 'fileutils'
 
 # Load .env
 # Must be on same level of the directory as the .env
-Dotenv.load("../../../../.env") # Since this gets shared to other files, it has to specify the path relative to that file
+# Dotenv.load("../../../../.env") # Since this gets shared to other files, it has to specify the path relative to that file
+Dotenv.load(File.dirname(__FILE__) + "/../.env") # Since this gets shared to other files, it has to specify the path relative to that file
 
 # Going headless
 $headless = Headless.new
@@ -29,127 +30,175 @@ customerStyling = "\033[38;2;255;255;0;1m" + "Customer" + "\033[0m"
 # Logic
 $button = ""
 $contScript = false # determines whether script continues or not
-initialPage = 'www.cingo.co'
+$initialPage = ''
 $count = 1
 
-# Base Path
-$path = "/vagrant/screenshots/" + $button.downcase + "/operations/" + File.basename($0, "Tab.rb")
+# Names
+$fileName = File.basename($0, ".rb")
+$properFileName = File.basename($0, ".rb").capitalize
+
+### FUNCTIONS ###
 
 # Screenshot Function
 def Screenshot
     
-    return $browser.screenshot.save($path + "/(#{$count}) " + File.basename($0, ".rb") + ".jpg"), $count += 1
+    return $browser.screenshot.save($path + "/(#{$count}) " + $fileName + ".jpg"), $count += 1
     
 end
 
-# CORRECT WEBSITE? 
-while $contScript === false
+# Current Page Getter Function
+def CurrentPage
 
-    # Make sure that we're on the page we actually wanted to visit
+    puts "I'm now on " + $browser.url
     puts $newline
-    puts "So, you wanted to go to \033[38;2;" + $neonGreen + initialPage + "\033[0m, right? [Y/n]"
-    response = gets.chomp
-    
-    # YES
-    if (response.upcase === "YES") | (response.upcase === "Y")
-        
-        # CONTINUE SCRIPT
-        $contScript = true
-        
+
+end
+
+# Close Browser at End of Process
+def Close
+
+    # Close browser
+    $browser.close
+    $headless.destroy
+
+end
+
+# Handles Push Notification Dialgoue Boxes
+def WaitOnPushNotification
+
+    # If the push notifications pop-up exists
+    if $browser.button(:id => 'onesignal-popover-cancel-button', :text => "No Thanks").exists?
+
+        # Click it
+        $browser.div(:id => 'onesignal-popover-container').button(:id => 'onesignal-popover-cancel-button', :text => "No Thanks").click
+        puts "I denied push notifications."
         puts $newline
-        puts "Great! Onward!" 
-        
-        puts $newline
-        puts "Loading..." + $newline
-                
-    # NO
+
     else
-        
-        puts "Oops! Where did you want to go?"
-        response = gets.chomp
-        
-    end # End IF
 
-end # End WHILE
+        # Error message
+        puts "The push notifications pop up didn't show up."
 
-# Webpage we want to start at
-$browser.goto initialPage
+    end
 
-# Get the title of page
-puts "You are now on the website for \033[38;2;" + $neonGreen + $browser.title + "\033[0m"
-puts $newline
+    # Wait for push notifications dialogue to go away
+    sleep(4)
 
-#############
-### START ###
-#############
-puts "\033[38;2;" + $headingColor +
-     "#############" + $newline +
-     "### START ###" + $newline +
-     "#############" + $newline +
-     "\033[0m"
-
-# Iterate over buttons by their indexes to see what's on the page
-$browser.buttons.each_with_index do |b, index|
-    
-    # Tells which buttons were found
-    puts "I found the " + b.text + " button."
 end
 
-# Readability
-puts $newline
+# Save Changes
+def SaveChanges(strSuccessMessage)
 
-# LOG IN TYPE
-begin
-    
-    # Reset to false
-    $contScript = false
-    
-    # Expert or Customer?
-    if ($button != "Expert") | ($button != "Customer")
+    # Click on Save Changes button
+    $browser.button(:type => 'submit', :class_name => /btn btn-outlined btn-green/, :text => /Save Changes/).click
+
+    # Wait for success message
+    begin
+
+        $browser.li(:class_name => /messenger-shown/).div(:text => strSuccessMessage).wait_until_present(5)
+        puts "Changes saved!"
+
+        Screenshot()
+
+    rescue
+
+        puts "Uh oh. Your changes appear not to have been saved."
+        Screenshot()
+
+    end
+
+end
+
+# Email Log In
+def EmailLogIn
+
+    # Find the username and password boxes by their class since only they have this particular class attached to them
+    $browser.text_fields(:class => /form-control border-focus-green/).each_with_index do |r, index|
         
-        # Find out which button to click
-        puts "Are you trying to log in as an " + expertStyling + " or a " + customerStyling + "?"
-        $button = gets.chomp.capitalize
+        # Should say that the 'email' and 'password' fields were found
+        puts "I found the " + r.type + " field."
         
-        # IF EITHER
-        if ($button === "Expert") | ($button === "Customer")
+        # Sets username and password
+        $browser.text_fields(:class => /form-control border-focus-green/)[index].set($emailCredentials[index])
             
-            # Continue
-            $contScript = true
+        # Prints username and then password
+        puts "I typed \033[38;2;255;64;129;1m" + $browser.text_fields(:class => /form-control border-focus-green/)[index].value + "\033[0m in the " + r.type + " input box."
+            
+        puts $newline
+    end
+
+    # SCREENSHOT
+    Screenshot()
+
+    # If the Sign In button exists
+    if $browser.form.button(:class => /btn-cingo/).exists?
         
-        end # END IF
-    
-    end # END IF
-    
-end until $contScript === true # END WHILE
-    
-# Make custom directory for script that's executed
-# $0 is the script that's being run
-if FileUtils.mkpath($path).exists? === true
-    
-    # Do nothing
-    
-else
-    
-    FileUtils.mkpath($path)
-    
+        # Click on it to submit the info
+        $browser.form.button(:class => /btn-cingo/).click
+        
+        # And notify the user that it was clicked
+        puts "Aaaaand I clicked Sign In."
+        puts $newline
+    else
+        puts "I didn't find the Sign In button on " + $browser.url + " that you were looking for."
+        abort
+    end
+
 end
 
-# If the button exists
-if $browser.button(:text => $button).exists?
-    
-    # Click the button & Let us know you've clicked it
-    $browser.button(:text => $button).click
-    puts $newline + "I clicked the " + $button + " button!"
-    
-# NOT FOUND
-else
-    
-    puts $newline
-    puts "It looks like the " + $button + " button doesn't exist."
-    abort
-    
+# Log Out -- Works on Customer & Expert
+def LogOut
+
+    # If the button exists
+    if $browser.li(:class => 'logout').a.exists?
+
+        # Click it
+        $browser.li(:class => 'logout').a.click
+        puts "I clicked it!"
+        puts $newline
+
+    elsif $browser.li(:name => "Sign Out").a.exists?
+
+        # Click it
+        $browser.li(:name => "Sign Out").a.click
+        puts "I clicked it!"
+        puts $newline
+
+    else
+
+        # Error message
+        puts "The Logout button doesn't exist, man."
+        abort
+
+    end
+
+    # WAIT on LOGIN PAGE to LOAD
+    begin
+        puts "Waiting on the experts login page to load..."
+        puts $newline
+        
+        # WAIT 20 SECONDS FOR DASHBOARD TO LOAD
+        $browser.window(:url => $initialPage).wait_until_present(20)
+        
+        # TAKE SCREENSHOT ONCE LOADED
+        Screenshot()
+        
+        # SUCCESS
+        puts "Yahoo! The login page loaded!"
+
+    # OTHERWISE
+    rescue
+        
+        puts $browser.url
+
+        # SCREENSHOT of DASHBOARD for DEBUGGING
+        Screenshot()
+        
+        puts "The experts login didn't load. :( Check screenshots in " + $path + " to debug."
+        abort
+    end
+
 end
 
-# Add new line for readability
-puts $newline
+
+### END FUNCTION SECTION ###
