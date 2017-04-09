@@ -4,3 +4,9 @@ Vagrantfile
 
 # Ignore .env file
 .env
+
+# Ignore Other Folders and files
+archived/
+documented bugs/
+screenshots/
+TSNotes.txt
